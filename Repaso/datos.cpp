@@ -24,5 +24,11 @@ int main() {
     string cadena = "Hola, mundo!";
     cout << "Cadena de caracteres: " << cadena << endl;
 
+    // Tipo de dato enumerado
+    enum DiaSemana {Lunes, Martes, Miercoles, Jueves, Viernes, Sabado, Domingo};
+    DiaSemana hoy = Martes;
+    cout << "Día de la semana: " << hoy << endl;
+
+
     return 0;
 }
