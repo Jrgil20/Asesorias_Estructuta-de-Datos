@@ -85,7 +85,7 @@ private:
     
     void fixInsert(Node* k) {
         Node* u;
-        while (k->parent->color == ROJO) {
+        while (k->parent != nullptr && k->parent->color == ROJO) {
             if (k->parent == k->parent->parent->right) {
                 u = k->parent->parent->left;  // tío
                 
@@ -140,20 +140,21 @@ private:
         root->color = NEGRO;
     }
     
-    void printTreeHelper(Node* root, std::string indent, bool last) {
+    void printTreeHelper(Node* root, const std::string& indent, bool last) {
         if (root != TNULL) {
             std::cout << indent;
+            std::string newIndent = indent;
             if (last) {
                 std::cout << "└── ";
-                indent += "    ";
+                newIndent += "    ";
             } else {
                 std::cout << "├── ";
-                indent += "│   ";
+                newIndent += "│   ";
             }
             std::string sColor = (root->color == ROJO) ? "R" : "N";
             std::cout << root->data << "(" << sColor << ")" << std::endl;
-            printTreeHelper(root->left, indent, false);
-            printTreeHelper(root->right, indent, true);
+            printTreeHelper(root->left, newIndent, false);
+            printTreeHelper(root->right, newIndent, true);
         }
     }
     

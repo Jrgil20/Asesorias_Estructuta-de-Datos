@@ -208,7 +208,7 @@ void inOrder(Node *root) {
     }
 }
 
-void printTree(Node *root, std::string prefix = "", bool isLeft = true) {
+void printTree(Node *root, const std::string& prefix = "", bool isLeft = true) {
     if (root != NULL) {
         std::cout << prefix;
         std::cout << (isLeft ? "├── " : "└── ");
