@@ -172,7 +172,14 @@ private:
         int leftBH = blackHeight(node->left);
         int rightBH = blackHeight(node->right);
         int add = (node->color == NEGRO) ? 1 : 0;
-        return leftBH + add;
+
+        if (leftBH != rightBH) {
+            std::cerr << "Inconsistencia en altura negra en el nodo " << node->data
+                      << ": izquierda=" << leftBH
+                      << ", derecha=" << rightBH << std::endl;
+        }
+
+        return ((leftBH > rightBH) ? leftBH : rightBH) + add;
     }
     
 public:
