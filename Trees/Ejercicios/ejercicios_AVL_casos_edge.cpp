@@ -19,6 +19,7 @@
 
 #include <iostream>
 #include <algorithm>
+#include <string>
 
 struct Node {
     int key;
