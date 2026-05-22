@@ -175,35 +175,51 @@ public:
             return false;
         }
         
-        int indice = hash(clave);
-        int indiceOriginal = indice;
+        int indiceOriginal = hash(clave);
+        int indice = indiceOriginal;
         int intentos = 0;
+        int primerEliminado = -1;
         
         std::cout << "  Insertando (" << clave << ", \"" << valor << "\") -> hash(" << clave << ") = " << indice << std::endl;
         
-        while (tabla[indice].estado == OCUPADO && tabla[indice].clave != clave) {
+        while (intentos < tamano) {
+            if (tabla[indice].estado == VACIO) {
+                break;
+            }
+            
+            if (tabla[indice].estado == OCUPADO && tabla[indice].clave == clave) {
+                std::cout << "  [CASO: Actualización de clave existente]" << std::endl;
+                tabla[indice].valor = valor;
+                return true;
+            }
+            
+            if (tabla[indice].estado == ELIMINADO && primerEliminado == -1) {
+                primerEliminado = indice;
+            }
+            
             intentos++;
+            if (intentos >= tamano) {
+                break;
+            }
+            
             std::cout << "  [COLISIÓN en " << indice << "] Sondeo lineal: índice = (" << indiceOriginal << " + " << intentos << ") % " << tamano << std::endl;
             indice = (indiceOriginal + intentos) % tamano;
-            
-            if (intentos >= tamano) {
-                std::cout << "  [CASO: Tabla llena después de sondear toda la tabla]" << std::endl;
-                return false;
-            }
         }
         
-        if (tabla[indice].estado == OCUPADO && tabla[indice].clave == clave) {
-            std::cout << "  [CASO: Actualización de clave existente]" << std::endl;
-        } else {
-            numElementos++;
+        if (intentos >= tamano && primerEliminado == -1 && tabla[indice].estado != VACIO) {
+            std::cout << "  [CASO: Tabla llena después de sondear toda la tabla]" << std::endl;
+            return false;
         }
         
-        tabla[indice].clave = clave;
-        tabla[indice].valor = valor;
-        tabla[indice].estado = OCUPADO;
+        int indiceInsercion = (primerEliminado != -1) ? primerEliminado : indice;
+        
+        numElementos++;
+        tabla[indiceInsercion].clave = clave;
+        tabla[indiceInsercion].valor = valor;
+        tabla[indiceInsercion].estado = OCUPADO;
         
         if (intentos > 0) {
-            std::cout << "  [Insertado en índice " << indice << " después de " << intentos << " colisión(es)]" << std::endl;
+            std::cout << "  [Insertado en índice " << indiceInsercion << " después de " << intentos << " colisión(es)]" << std::endl;
         }
         
         return true;
