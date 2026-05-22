@@ -2,6 +2,7 @@
 
 This directory contains implementations of various tree data structures.
 
+- **Guía de estudio (Hash → BST → AVL/RB → B-Tree):** Ver [`Guia_Estudio_Hash_a_BTree.md`](./Guia_Estudio_Hash_a_BTree.md)
 - **BST (Binary Search Tree)**: A simple tree structure where each node has at most two children, and the left child is less than the parent, and the right child is greater.
 - **AVL Tree**: A self-balancing binary search tree. The heights of the two child subtrees of any node differ by at most one.
 - **Red-Black Tree**: Another self-balancing binary search tree with slightly less strict balancing rules than AVL trees, resulting in faster insertions and deletions but slower lookups.
