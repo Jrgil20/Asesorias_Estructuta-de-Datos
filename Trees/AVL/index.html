@@ -680,9 +680,9 @@ canvas.addEventListener('wheel', e => {
 
 function zoom(factor, cx, cy) {
   const rect = canvas.getBoundingClientRect();
-  cx = cx ?? rect.left + canvas.width/2;
-  cy = cy ?? rect.top  + canvas.height/2;
-  const mx = cx - rect.left, my = cy - rect.top;
+  // Default pivot: center of the canvas element (canvas-local coordinates)
+  const mx = (cx != null ? cx - rect.left : canvas.width  / 2);
+  const my = (cy != null ? cy - rect.top  : canvas.height / 2);
   camX = mx - factor * (mx - camX);
   camY = my - factor * (my - camY);
   camScale *= factor;
@@ -698,11 +698,12 @@ function resetView() {
     minX = Math.min(minX, n.x); maxX = Math.max(maxX, n.x);
     minY = Math.min(minY, n.y); maxY = Math.max(maxY, n.y);
   });
-  const pad = 60;
-  const tw = maxX - minX + pad*2, th = maxY - minY + pad*2;
-  camScale = Math.min(canvas.width / tw, canvas.height / th, 1.2);
-  camX = (canvas.width  - tw  * camScale) / 2 + pad * camScale - minX * camScale;
-  camY = (canvas.height - th  * camScale) / 2 + pad * camScale - minY * camScale;
+  const RESET_PADDING = 60;   // px of whitespace around the tree when fitting
+  const MAX_FIT_SCALE = 1.2;  // never zoom-in beyond this factor on reset
+  const tw = maxX - minX + RESET_PADDING*2, th = maxY - minY + RESET_PADDING*2;
+  camScale = Math.min(canvas.width / tw, canvas.height / th, MAX_FIT_SCALE);
+  camX = (canvas.width  - tw  * camScale) / 2 + RESET_PADDING * camScale - minX * camScale;
+  camY = (canvas.height - th  * camScale) / 2 + RESET_PADDING * camScale - minY * camScale;
   render();
 }
 
@@ -758,7 +759,8 @@ function uiInsert() {
 
 function uiInsertRandom() {
   if (traversing) { showToast('Espera a que termine el recorrido'); return; }
-  const v = Math.floor(Math.random() * 200) - 50;
+  const RANDOM_RANGE = 200, RANDOM_OFFSET = -50; // values from -50 to 149
+  const v = Math.floor(Math.random() * RANDOM_RANGE) + RANDOM_OFFSET;
   document.getElementById('insertVal').value = v;
   uiInsert();
 }
@@ -827,8 +829,10 @@ function uiClear() {
 
 function speed() {
   const s = parseInt(document.getElementById('speedSlider').value);
-  // invert: slider right = fast = low delay
-  return 1050 - s;
+  // MAX_DELAY_MS - slider value inverts the range so that a higher slider position
+  // means faster animation (shorter delay).
+  const MAX_DELAY_MS = 1050;
+  return MAX_DELAY_MS - s;
 }
 
 async function uiTraverse(type) {
@@ -882,8 +886,9 @@ document.getElementById('deleteVal').addEventListener('keydown', e => { if (e.ke
 window.addEventListener('resize', resizeCanvas);
 resizeCanvas();
 
-// seed with a sample tree so it's not empty on load
-[30, 15, 50, 10, 20, 40, 70, 5, 12].forEach(v => tree.insert(v));
+// Initial demo tree — values chosen to produce a well-balanced AVL tree of height 4
+const DEMO_TREE_VALUES = [30, 15, 50, 10, 20, 40, 70, 5, 12];
+DEMO_TREE_VALUES.forEach(v => tree.insert(v));
 tree.resetStates();
 updateStats();
 resetView();
