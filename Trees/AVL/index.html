@@ -1,0 +1,897 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Visualizador AVL</title>
+  <style>
+    :root {
+      --bg: #0f1117;
+      --panel: #1a1d27;
+      --border: #2e3147;
+      --accent: #7c6af7;
+      --accent2: #56cfb2;
+      --danger: #e05c7a;
+      --warn: #f0a94a;
+      --text: #e2e4f0;
+      --muted: #6b7080;
+      --node-default: #2a2d45;
+      --node-highlight: #7c6af7;
+      --node-visit: #56cfb2;
+      --node-min: #3a9e8c;
+      --node-max: #9b5de5;
+      --node-stroke: #4e5275;
+      --edge: #3a3e5c;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+      overflow: hidden;
+    }
+
+    header {
+      padding: 12px 20px;
+      background: var(--panel);
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      flex-wrap: wrap;
+    }
+
+    header h1 {
+      font-size: 1.1rem;
+      font-weight: 700;
+      color: var(--accent);
+      letter-spacing: .04em;
+      white-space: nowrap;
+    }
+
+    .badge {
+      font-size: .7rem;
+      padding: 2px 8px;
+      border-radius: 20px;
+      background: var(--border);
+      color: var(--muted);
+    }
+
+    .main {
+      display: flex;
+      flex: 1;
+      overflow: hidden;
+    }
+
+    /* ── Sidebar ── */
+    .sidebar {
+      width: 270px;
+      min-width: 200px;
+      background: var(--panel);
+      border-right: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      gap: 0;
+      overflow-y: auto;
+    }
+
+    .section {
+      padding: 14px 16px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .section-title {
+      font-size: .68rem;
+      text-transform: uppercase;
+      letter-spacing: .1em;
+      color: var(--muted);
+      margin-bottom: 10px;
+    }
+
+    .row {
+      display: flex;
+      gap: 6px;
+      margin-bottom: 6px;
+      align-items: center;
+    }
+
+    input[type=number], input[type=text] {
+      flex: 1;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      color: var(--text);
+      padding: 7px 10px;
+      font-size: .85rem;
+      outline: none;
+      transition: border .2s;
+    }
+    input[type=number]:focus, input[type=text]:focus {
+      border-color: var(--accent);
+    }
+
+    button {
+      border: none;
+      border-radius: 6px;
+      padding: 7px 12px;
+      font-size: .82rem;
+      cursor: pointer;
+      font-weight: 600;
+      transition: opacity .15s, transform .1s;
+      white-space: nowrap;
+    }
+    button:hover { opacity: .85; }
+    button:active { transform: scale(.97); }
+
+    .btn-primary { background: var(--accent); color: #fff; }
+    .btn-danger  { background: var(--danger); color: #fff; }
+    .btn-warn    { background: var(--warn);   color: #111; }
+    .btn-teal    { background: var(--accent2); color: #111; }
+    .btn-sm      { padding: 6px 10px; font-size: .78rem; }
+    .btn-full    { width: 100%; margin-bottom: 6px; }
+
+    .traversal-btns { display: flex; flex-direction: column; gap: 6px; }
+
+    .speed-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .speed-row label { font-size: .78rem; color: var(--muted); white-space: nowrap; }
+    input[type=range] {
+      flex: 1;
+      accent-color: var(--accent);
+    }
+
+    /* traversal output */
+    .trav-output {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 8px 10px;
+      font-size: .78rem;
+      min-height: 36px;
+      line-height: 1.7;
+      color: var(--accent2);
+      word-break: break-all;
+    }
+
+    .info-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 6px;
+    }
+    .info-card {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 8px 10px;
+      font-size: .78rem;
+    }
+    .info-card span { display: block; font-size: 1.1rem; font-weight: 700; color: var(--accent); }
+
+    .legend {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+    .leg-item {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      font-size: .72rem;
+      color: var(--muted);
+    }
+    .leg-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+    }
+
+    /* ── Canvas area ── */
+    .canvas-wrap {
+      flex: 1;
+      position: relative;
+      overflow: hidden;
+    }
+
+    #treeCanvas {
+      width: 100%;
+      height: 100%;
+      cursor: grab;
+    }
+    #treeCanvas:active { cursor: grabbing; }
+
+    .zoom-controls {
+      position: absolute;
+      bottom: 16px;
+      right: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+    .zoom-controls button {
+      width: 32px;
+      height: 32px;
+      padding: 0;
+      background: var(--panel);
+      border: 1px solid var(--border);
+      color: var(--text);
+      font-size: 1.1rem;
+      border-radius: 6px;
+    }
+
+    .hint {
+      position: absolute;
+      top: 10px;
+      left: 50%;
+      transform: translateX(-50%);
+      font-size: .72rem;
+      color: var(--muted);
+      pointer-events: none;
+    }
+
+    /* message toast */
+    #toast {
+      position: fixed;
+      bottom: 20px;
+      left: 50%;
+      transform: translateX(-50%) translateY(60px);
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 8px 18px;
+      font-size: .82rem;
+      color: var(--text);
+      transition: transform .3s ease;
+      pointer-events: none;
+      z-index: 999;
+    }
+    #toast.show { transform: translateX(-50%) translateY(0); }
+
+    /* rotation flash overlay */
+    #rotLabel {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%,-50%);
+      font-size: 1.3rem;
+      font-weight: 700;
+      color: var(--warn);
+      background: rgba(0,0,0,.55);
+      padding: 6px 18px;
+      border-radius: 8px;
+      pointer-events: none;
+      opacity: 0;
+      transition: opacity .3s;
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <h1>🌲 Visualizador AVL</h1>
+  <span class="badge">Auto-balanceado</span>
+  <span class="badge">Rotaciones LL · RR · LR · RL</span>
+</header>
+
+<div class="main">
+
+  <!-- ── Sidebar ── -->
+  <div class="sidebar">
+
+    <!-- Insert -->
+    <div class="section">
+      <div class="section-title">Insertar</div>
+      <div class="row">
+        <input type="number" id="insertVal" placeholder="Valor…" />
+        <button class="btn-primary" onclick="uiInsert()">Insertar</button>
+      </div>
+      <div class="row">
+        <button class="btn-warn btn-sm" style="flex:1" onclick="uiInsertRandom()">Aleatorio</button>
+        <button class="btn-warn btn-sm" style="flex:1" onclick="uiInsertMultiple()">Varios</button>
+      </div>
+    </div>
+
+    <!-- Delete -->
+    <div class="section">
+      <div class="section-title">Eliminar</div>
+      <div class="row">
+        <input type="number" id="deleteVal" placeholder="Valor…" />
+        <button class="btn-danger" onclick="uiDeleteVal()">Eliminar</button>
+      </div>
+      <button class="btn-danger btn-full btn-sm" onclick="uiDeleteMin()">🔻 Eliminar menor</button>
+      <button class="btn-danger btn-full btn-sm" onclick="uiDeleteMax()">🔺 Eliminar mayor</button>
+      <button class="btn-warn btn-full btn-sm" onclick="uiClear()">🗑 Limpiar árbol</button>
+    </div>
+
+    <!-- Traversals -->
+    <div class="section">
+      <div class="section-title">Recorridos</div>
+      <div class="speed-row" style="margin-bottom:10px">
+        <label>Velocidad</label>
+        <input type="range" id="speedSlider" min="50" max="1000" value="450" />
+      </div>
+      <div class="traversal-btns">
+        <button class="btn-primary btn-sm" onclick="uiTraverse('inorder')">🔵 In-Orden (LNR)</button>
+        <button class="btn-teal  btn-sm" onclick="uiTraverse('preorder')">🟢 Pre-Orden (NLR)</button>
+        <button class="btn-warn  btn-sm" onclick="uiTraverse('postorder')">🟡 Post-Orden (LRN)</button>
+      </div>
+    </div>
+
+    <!-- Traversal output -->
+    <div class="section">
+      <div class="section-title">Resultado recorrido</div>
+      <div class="trav-output" id="travOutput">—</div>
+    </div>
+
+    <!-- Stats -->
+    <div class="section">
+      <div class="section-title">Estadísticas</div>
+      <div class="info-grid">
+        <div class="info-card">Nodos<span id="statNodes">0</span></div>
+        <div class="info-card">Altura<span id="statHeight">0</span></div>
+        <div class="info-card">Mínimo<span id="statMin">—</span></div>
+        <div class="info-card">Máximo<span id="statMax">—</span></div>
+      </div>
+    </div>
+
+    <!-- Legend -->
+    <div class="section">
+      <div class="section-title">Leyenda</div>
+      <div class="legend">
+        <div class="leg-item"><div class="leg-dot" style="background:#2a2d45;border:2px solid #4e5275"></div>Nodo normal</div>
+        <div class="leg-item"><div class="leg-dot" style="background:#7c6af7"></div>Visitando</div>
+        <div class="leg-item"><div class="leg-dot" style="background:#56cfb2"></div>Procesado</div>
+        <div class="leg-item"><div class="leg-dot" style="background:#f0a94a"></div>Recién rotado</div>
+        <div class="leg-item"><div class="leg-dot" style="background:#3a9e8c"></div>Mínimo</div>
+        <div class="leg-item"><div class="leg-dot" style="background:#9b5de5"></div>Máximo</div>
+      </div>
+    </div>
+
+  </div><!-- /sidebar -->
+
+  <!-- ── Canvas ── -->
+  <div class="canvas-wrap">
+    <canvas id="treeCanvas"></canvas>
+    <div class="hint">Rueda para zoom · Arrastra para mover</div>
+    <div class="zoom-controls">
+      <button onclick="zoom(1.2)">＋</button>
+      <button onclick="zoom(0.8)">－</button>
+      <button onclick="resetView()" title="Reset">⌂</button>
+    </div>
+    <div id="rotLabel"></div>
+  </div>
+
+</div><!-- /main -->
+
+<div id="toast"></div>
+
+<script>
+// ════════════════════════════════════════════
+//  AVL Tree Logic
+// ════════════════════════════════════════════
+
+class AVLNode {
+  constructor(key) {
+    this.key    = key;
+    this.left   = null;
+    this.right  = null;
+    this.height = 1;
+    // layout
+    this.x = 0; this.y = 0;
+    // visual state
+    this.state  = 'default'; // default | highlight | visited | rotated | min | max
+  }
+}
+
+class AVLTree {
+  constructor() {
+    this.root = null;
+    this._lastRotations = [];
+  }
+
+  _h(n) { return n ? n.height : 0; }
+
+  _update(n) {
+    if (n) n.height = 1 + Math.max(this._h(n.left), this._h(n.right));
+  }
+
+  _balance(n) { return n ? this._h(n.left) - this._h(n.right) : 0; }
+
+  _rotR(y) {
+    const x = y.left, T2 = x.right;
+    x.right = y; y.left = T2;
+    this._update(y); this._update(x);
+    this._lastRotations.push(x.key);
+    return x;
+  }
+
+  _rotL(x) {
+    const y = x.right, T2 = y.left;
+    y.left = x; x.right = T2;
+    this._update(x); this._update(y);
+    this._lastRotations.push(y.key);
+    return y;
+  }
+
+  _rebalance(n, key) {
+    this._update(n);
+    const b = this._balance(n);
+    // LL
+    if (b > 1 && key < n.left.key)  return this._rotR(n);
+    // RR
+    if (b < -1 && key > n.right.key) return this._rotL(n);
+    // LR
+    if (b > 1 && key > n.left.key) { n.left = this._rotL(n.left); return this._rotR(n); }
+    // RL
+    if (b < -1 && key < n.right.key) { n.right = this._rotR(n.right); return this._rotL(n); }
+    return n;
+  }
+
+  insert(key) {
+    this._lastRotations = [];
+    this.root = this._insert(this.root, key);
+    return this._lastRotations;
+  }
+
+  _insert(n, key) {
+    if (!n) return new AVLNode(key);
+    if (key < n.key)       n.left  = this._insert(n.left, key);
+    else if (key > n.key)  n.right = this._insert(n.right, key);
+    else return n;
+    return this._rebalance(n, key);
+  }
+
+  _minNode(n) { while (n.left) n = n.left; return n; }
+  _maxNode(n) { while (n.right) n = n.right; return n; }
+
+  getMin() { return this.root ? this._minNode(this.root).key : null; }
+  getMax() { return this.root ? this._maxNode(this.root).key : null; }
+
+  delete(key) {
+    this._lastRotations = [];
+    this.root = this._delete(this.root, key);
+    return this._lastRotations;
+  }
+
+  _delete(n, key) {
+    if (!n) return null;
+    if      (key < n.key) n.left  = this._delete(n.left, key);
+    else if (key > n.key) n.right = this._delete(n.right, key);
+    else {
+      if (!n.left || !n.right) {
+        n = n.left || n.right;
+      } else {
+        const succ = this._minNode(n.right);
+        n.key   = succ.key;
+        n.right = this._delete(n.right, succ.key);
+      }
+    }
+    if (!n) return null;
+    this._update(n);
+    const b = this._balance(n);
+    if (b > 1) {
+      if (this._balance(n.left) >= 0)       return this._rotR(n);
+      n.left = this._rotL(n.left); return this._rotR(n);
+    }
+    if (b < -1) {
+      if (this._balance(n.right) <= 0)      return this._rotL(n);
+      n.right = this._rotR(n.right); return this._rotL(n);
+    }
+    return n;
+  }
+
+  // ── Traversals ──
+  inorder()   { const r=[]; this._in(this.root, r);   return r; }
+  preorder()  { const r=[]; this._pre(this.root, r);  return r; }
+  postorder() { const r=[]; this._post(this.root, r); return r; }
+
+  _in(n, r)   { if (!n) return; this._in(n.left,r);   r.push(n.key); this._in(n.right,r); }
+  _pre(n, r)  { if (!n) return; r.push(n.key); this._pre(n.left,r);  this._pre(n.right,r); }
+  _post(n, r) { if (!n) return; this._post(n.left,r); this._post(n.right,r); r.push(n.key); }
+
+  // ── Stats ──
+  size() { return this._size(this.root); }
+  _size(n) { return n ? 1 + this._size(n.left) + this._size(n.right) : 0; }
+
+  height() { return this._h(this.root); }
+
+  // ── Reset states ──
+  resetStates() { this._walk(this.root, n => n.state = 'default'); }
+  _walk(n, fn) { if (!n) return; fn(n); this._walk(n.left, fn); this._walk(n.right, fn); }
+
+  // build ordered-key → node map
+  nodeMap() {
+    const m = {}; 
+    this._walk(this.root, n => m[n.key] = n);
+    return m;
+  }
+
+  // ── Traversal with node references ──
+  inorderNodes()   { const r=[]; this._inN(this.root,r);   return r; }
+  preorderNodes()  { const r=[]; this._preN(this.root,r);  return r; }
+  postorderNodes() { const r=[]; this._postN(this.root,r); return r; }
+  _inN(n,r)   { if(!n)return; this._inN(n.left,r);   r.push(n); this._inN(n.right,r); }
+  _preN(n,r)  { if(!n)return; r.push(n); this._preN(n.left,r);  this._preN(n.right,r); }
+  _postN(n,r) { if(!n)return; this._postN(n.left,r); this._postN(n.right,r); r.push(n); }
+}
+
+// ════════════════════════════════════════════
+//  Layout
+// ════════════════════════════════════════════
+const H_GAP = 60;
+const V_GAP = 70;
+
+function computeLayout(root) {
+  if (!root) return;
+  let counter = 0;
+  function assignX(node) {
+    if (!node) return;
+    assignX(node.left);
+    node._order = counter++;
+    assignX(node.right);
+  }
+  function assignY(node, depth) {
+    if (!node) return;
+    node.x = node._order * H_GAP;
+    node.y = depth * V_GAP;
+    assignY(node.left,  depth + 1);
+    assignY(node.right, depth + 1);
+  }
+  assignX(root);
+  assignY(root, 0);
+}
+
+// ════════════════════════════════════════════
+//  Canvas Renderer
+// ════════════════════════════════════════════
+const canvas  = document.getElementById('treeCanvas');
+const ctx     = canvas.getContext('2d');
+const R       = 22; // node radius
+
+let camX = 0, camY = 0, camScale = 1;
+let dragging = false, dragStart = {x:0,y:0}, camStart = {x:0,y:0};
+
+function resizeCanvas() {
+  const wrap = canvas.parentElement;
+  canvas.width  = wrap.clientWidth;
+  canvas.height = wrap.clientHeight;
+  render();
+}
+
+function worldToScreen(wx, wy) {
+  return { x: wx * camScale + camX, y: wy * camScale + camY };
+}
+
+const stateColors = {
+  default:   '#2a2d45',
+  highlight: '#7c6af7',
+  visited:   '#56cfb2',
+  rotated:   '#f0a94a',
+  min:       '#3a9e8c',
+  max:       '#9b5de5',
+};
+const stateText = {
+  default:   '#e2e4f0',
+  highlight: '#fff',
+  visited:   '#111',
+  rotated:   '#111',
+  min:       '#fff',
+  max:       '#fff',
+};
+
+function drawEdge(a, b) {
+  const sa = worldToScreen(a.x, a.y);
+  const sb = worldToScreen(b.x, b.y);
+  ctx.beginPath();
+  ctx.moveTo(sa.x, sa.y);
+  ctx.lineTo(sb.x, sb.y);
+  ctx.strokeStyle = '#3a3e5c';
+  ctx.lineWidth   = 1.5;
+  ctx.stroke();
+}
+
+function drawNode(n) {
+  const s = worldToScreen(n.x, n.y);
+  const fill   = stateColors[n.state] || stateColors.default;
+  const textC  = stateText[n.state]   || stateText.default;
+  const r = R * camScale;
+
+  // shadow
+  ctx.beginPath();
+  ctx.arc(s.x, s.y + 2, r, 0, Math.PI * 2);
+  ctx.fillStyle = 'rgba(0,0,0,.35)';
+  ctx.fill();
+
+  // circle
+  ctx.beginPath();
+  ctx.arc(s.x, s.y, r, 0, Math.PI * 2);
+  ctx.fillStyle = fill;
+  ctx.fill();
+  ctx.strokeStyle = '#4e5275';
+  ctx.lineWidth = 1.5;
+  ctx.stroke();
+
+  // key text
+  ctx.fillStyle = textC;
+  ctx.font = `${Math.max(10, 13 * camScale)}px 'Segoe UI', sans-serif`;
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText(n.key, s.x, s.y);
+
+  // balance factor
+  const bf = tree._balance(n);
+  const bfColor = Math.abs(bf) > 1 ? '#e05c7a' : (bf === 0 ? '#56cfb2' : '#f0a94a');
+  ctx.fillStyle = bfColor;
+  ctx.font = `${Math.max(7, 9 * camScale)}px 'Segoe UI', sans-serif`;
+  ctx.fillText(bf > 0 ? '+'+bf : bf, s.x + r * 0.9, s.y - r * 0.9);
+}
+
+function renderTree(node) {
+  if (!node) return;
+  if (node.left)  { drawEdge(node, node.left);  renderTree(node.left);  }
+  if (node.right) { drawEdge(node, node.right); renderTree(node.right); }
+  drawNode(node);
+}
+
+function render() {
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+  if (!tree.root) {
+    ctx.fillStyle = '#3a3e5c';
+    ctx.font = '16px Segoe UI';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText('Árbol vacío — inserta un valor para comenzar', canvas.width/2, canvas.height/2);
+    return;
+  }
+
+  computeLayout(tree.root);
+  renderTree(tree.root);
+}
+
+// ════════════════════════════════════════════
+//  Camera Controls
+// ════════════════════════════════════════════
+canvas.addEventListener('mousedown', e => {
+  dragging = true;
+  dragStart = {x: e.clientX, y: e.clientY};
+  camStart  = {x: camX, y: camY};
+});
+canvas.addEventListener('mousemove', e => {
+  if (!dragging) return;
+  camX = camStart.x + (e.clientX - dragStart.x);
+  camY = camStart.y + (e.clientY - dragStart.y);
+  render();
+});
+canvas.addEventListener('mouseup',   () => dragging = false);
+canvas.addEventListener('mouseleave',() => dragging = false);
+canvas.addEventListener('wheel', e => {
+  e.preventDefault();
+  const factor = e.deltaY < 0 ? 1.1 : 0.9;
+  zoom(factor, e.clientX, e.clientY);
+}, { passive: false });
+
+function zoom(factor, cx, cy) {
+  const rect = canvas.getBoundingClientRect();
+  // Default pivot: center of the canvas element (canvas-local coordinates)
+  const mx = (cx != null ? cx - rect.left : canvas.width  / 2);
+  const my = (cy != null ? cy - rect.top  : canvas.height / 2);
+  camX = mx - factor * (mx - camX);
+  camY = my - factor * (my - camY);
+  camScale *= factor;
+  render();
+}
+
+function resetView() {
+  if (!tree.root) { camX=0; camY=0; camScale=1; render(); return; }
+  computeLayout(tree.root);
+  // fit all nodes
+  let minX=Infinity, maxX=-Infinity, minY=Infinity, maxY=-Infinity;
+  tree._walk(tree.root, n => {
+    minX = Math.min(minX, n.x); maxX = Math.max(maxX, n.x);
+    minY = Math.min(minY, n.y); maxY = Math.max(maxY, n.y);
+  });
+  const RESET_PADDING = 60;   // px of whitespace around the tree when fitting
+  const MAX_FIT_SCALE = 1.2;  // never zoom-in beyond this factor on reset
+  const tw = maxX - minX + RESET_PADDING*2, th = maxY - minY + RESET_PADDING*2;
+  camScale = Math.min(canvas.width / tw, canvas.height / th, MAX_FIT_SCALE);
+  camX = (canvas.width  - tw  * camScale) / 2 + RESET_PADDING * camScale - minX * camScale;
+  camY = (canvas.height - th  * camScale) / 2 + RESET_PADDING * camScale - minY * camScale;
+  render();
+}
+
+// ════════════════════════════════════════════
+//  State
+// ════════════════════════════════════════════
+const tree = new AVLTree();
+let traversing = false;
+
+function updateStats() {
+  document.getElementById('statNodes').textContent = tree.size();
+  document.getElementById('statHeight').textContent = tree.height();
+  const mn = tree.getMin(), mx = tree.getMax();
+  document.getElementById('statMin').textContent = mn ?? '—';
+  document.getElementById('statMax').textContent = mx ?? '—';
+}
+
+function showToast(msg, duration = 1800) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), duration);
+}
+
+function flashRotation(keys) {
+  if (!keys.length) return;
+  const el = document.getElementById('rotLabel');
+  el.textContent = keys.length === 1
+    ? `Rotación en nodo ${keys[0]}`
+    : `Rotaciones: ${keys.join(' → ')}`;
+  el.style.opacity = '1';
+  setTimeout(() => el.style.opacity = '0', 1000);
+}
+
+// ════════════════════════════════════════════
+//  UI Handlers
+// ════════════════════════════════════════════
+function uiInsert() {
+  const v = parseInt(document.getElementById('insertVal').value);
+  if (isNaN(v)) { showToast('Ingresa un número válido'); return; }
+  if (traversing) { showToast('Espera a que termine el recorrido'); return; }
+  const rots = tree.insert(v);
+  tree.resetStates();
+  // highlight inserted
+  const m = tree.nodeMap();
+  if (m[v]) m[v].state = 'highlight';
+  if (rots.length) { rots.forEach(k => { if(m[k]) m[k].state = 'rotated'; }); flashRotation(rots); }
+  updateStats();
+  resetView();
+  document.getElementById('insertVal').value = '';
+  setTimeout(() => { tree.resetStates(); render(); }, 1200);
+}
+
+function uiInsertRandom() {
+  if (traversing) { showToast('Espera a que termine el recorrido'); return; }
+  const RANDOM_RANGE = 200, RANDOM_OFFSET = -50; // values from -50 to 149
+  const v = Math.floor(Math.random() * RANDOM_RANGE) + RANDOM_OFFSET;
+  document.getElementById('insertVal').value = v;
+  uiInsert();
+}
+
+function uiInsertMultiple() {
+  if (traversing) { showToast('Espera a que termine el recorrido'); return; }
+  const raw = prompt('Ingresa valores separados por comas (ej: 10,20,5,30):');
+  if (!raw) return;
+  const vals = raw.split(',').map(s => parseInt(s.trim())).filter(n => !isNaN(n));
+  if (!vals.length) { showToast('Sin valores válidos'); return; }
+  vals.forEach(v => tree.insert(v));
+  tree.resetStates();
+  updateStats();
+  resetView();
+  showToast(`Insertados: ${vals.join(', ')}`);
+}
+
+function uiDeleteVal() {
+  const v = parseInt(document.getElementById('deleteVal').value);
+  if (isNaN(v)) { showToast('Ingresa un número válido'); return; }
+  if (traversing) { showToast('Espera a que termine el recorrido'); return; }
+  const before = tree.size();
+  const rots = tree.delete(v);
+  if (tree.size() === before) { showToast(`El valor ${v} no existe en el árbol`); return; }
+  tree.resetStates();
+  if (rots.length) {
+    const m = tree.nodeMap();
+    rots.forEach(k => { if(m[k]) m[k].state = 'rotated'; });
+    flashRotation(rots);
+  }
+  updateStats();
+  resetView();
+  document.getElementById('deleteVal').value = '';
+  setTimeout(() => { tree.resetStates(); render(); }, 1200);
+}
+
+function uiDeleteMin() {
+  if (!tree.root) { showToast('El árbol está vacío'); return; }
+  if (traversing) { showToast('Espera a que termine el recorrido'); return; }
+  const mn = tree.getMin();
+  tree.delete(mn);
+  tree.resetStates();
+  updateStats();
+  resetView();
+  showToast(`Eliminado mínimo: ${mn}`);
+}
+
+function uiDeleteMax() {
+  if (!tree.root) { showToast('El árbol está vacío'); return; }
+  if (traversing) { showToast('Espera a que termine el recorrido'); return; }
+  const mx = tree.getMax();
+  tree.delete(mx);
+  tree.resetStates();
+  updateStats();
+  resetView();
+  showToast(`Eliminado máximo: ${mx}`);
+}
+
+function uiClear() {
+  if (traversing) { showToast('Espera a que termine el recorrido'); return; }
+  tree.root = null;
+  document.getElementById('travOutput').textContent = '—';
+  updateStats();
+  render();
+}
+
+function speed() {
+  const s = parseInt(document.getElementById('speedSlider').value);
+  // MAX_DELAY_MS - slider value inverts the range so that a higher slider position
+  // means faster animation (shorter delay).
+  const MAX_DELAY_MS = 1050;
+  return MAX_DELAY_MS - s;
+}
+
+async function uiTraverse(type) {
+  if (!tree.root) { showToast('El árbol está vacío'); return; }
+  if (traversing)  { showToast('Ya hay un recorrido en curso'); return; }
+  traversing = true;
+
+  tree.resetStates();
+  render();
+
+  let nodes;
+  const labels = { inorder:'In-Orden (LNR)', preorder:'Pre-Orden (NLR)', postorder:'Post-Orden (LRN)' };
+  if (type === 'inorder')        nodes = tree.inorderNodes();
+  else if (type === 'preorder')  nodes = tree.preorderNodes();
+  else                           nodes = tree.postorderNodes();
+
+  const order = [];
+  for (const n of nodes) {
+    n.state = 'highlight';
+    render();
+    await sleep(speed());
+    n.state = 'visited';
+    order.push(n.key);
+    document.getElementById('travOutput').textContent = order.join(' → ');
+    render();
+    await sleep(speed() * 0.3);
+  }
+
+  showToast(`${labels[type]}: ${order.join(', ')}`);
+  traversing = false;
+
+  // highlight min/max
+  const mn = tree.getMin(), mx = tree.getMax();
+  const m = tree.nodeMap();
+  if (m[mn]) m[mn].state = 'min';
+  if (m[mx]) m[mx].state = 'max';
+  render();
+}
+
+function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
+
+// ════════════════════════════════════════════
+//  Input helpers
+// ════════════════════════════════════════════
+document.getElementById('insertVal').addEventListener('keydown', e => { if (e.key==='Enter') uiInsert(); });
+document.getElementById('deleteVal').addEventListener('keydown', e => { if (e.key==='Enter') uiDeleteVal(); });
+
+// ════════════════════════════════════════════
+//  Init
+// ════════════════════════════════════════════
+window.addEventListener('resize', resizeCanvas);
+resizeCanvas();
+
+// Initial demo tree — values chosen to produce a well-balanced AVL tree of height 4
+const DEMO_TREE_VALUES = [30, 15, 50, 10, 20, 40, 70, 5, 12];
+DEMO_TREE_VALUES.forEach(v => tree.insert(v));
+tree.resetStates();
+updateStats();
+resetView();
+</script>
+</body>
+</html>
